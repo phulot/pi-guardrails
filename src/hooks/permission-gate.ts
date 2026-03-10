@@ -4,6 +4,7 @@ import {
   type ExtensionAPI,
   type ExtensionContext,
   getMarkdownTheme,
+  isToolCallEventType,
 } from "@mariozechner/pi-coding-agent";
 import {
   Box,
@@ -268,9 +269,9 @@ export function setupPermissionGateHook(
   );
 
   pi.on("tool_call", async (event, ctx) => {
-    if (event.toolName !== "bash") return;
+    if (!isToolCallEventType("bash", event)) return;
 
-    const command = String(event.input.command ?? "");
+    const command = event.input.command;
 
     // Check allowed patterns first (bypass)
     for (const pattern of allowedPatterns) {
