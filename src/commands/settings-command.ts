@@ -178,6 +178,19 @@ const COMMAND_EXAMPLES: Array<{
   pattern: DangerousPattern;
 }> = [
   {
+    label: "Homebrew",
+    description: "Block brew commands (use Nix instead)",
+    pattern: { pattern: "brew", description: "Homebrew package manager" },
+  },
+  {
+    label: "Docker secrets",
+    description: "Block docker commands that may expose environment secrets",
+    pattern: {
+      pattern: "docker inspect",
+      description: "Docker inspect (may expose env vars)",
+    },
+  },
+  {
     label: "Terraform apply",
     description: "Require confirmation for infrastructure changes",
     pattern: {
