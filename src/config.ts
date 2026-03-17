@@ -217,6 +217,51 @@ const DEFAULT_CONFIG: ResolvedConfig = {
           "Accessing {file} is not allowed. This file contains secrets. " +
           "Explain to the user why you want to access this file, and if changes are needed ask the user to make them.",
       },
+      {
+        id: "home-credentials",
+        name: "Home directory credentials",
+        description:
+          "Sensitive credential and configuration files in the user home directory",
+        patterns: [
+          // dbt
+          { pattern: "/.dbt/profiles.yml", regex: true },
+          // AWS
+          { pattern: "/.aws/credentials", regex: true },
+          { pattern: "/.aws/config", regex: true },
+          // SSH
+          { pattern: "/.ssh/", regex: true },
+          // Kubernetes
+          { pattern: "/.kube/config", regex: true },
+          // Docker
+          { pattern: "/.docker/config.json", regex: true },
+          // PostgreSQL
+          { pattern: "/\\.pgpass$", regex: true },
+          // MySQL
+          { pattern: "/\\.my\\.cnf$", regex: true },
+          // Network credentials
+          { pattern: "/\\.netrc$", regex: true },
+          // npm tokens
+          { pattern: "/\\.npmrc$", regex: true },
+          // PyPI tokens
+          { pattern: "/\\.pypirc$", regex: true },
+          // GnuPG
+          { pattern: "/.gnupg/", regex: true },
+          // Google Cloud
+          { pattern: "/.config/gcloud/", regex: true },
+          // Azure
+          { pattern: "/.azure/", regex: true },
+          // Terraform
+          { pattern: "/\\.terraformrc$", regex: true },
+          { pattern: "/.terraform.d/credentials.tfrc.json", regex: true },
+          // Vault
+          { pattern: "/\\.vault-token$", regex: true },
+        ],
+        protection: "noAccess",
+        onlyIfExists: false,
+        blockMessage:
+          "Accessing {file} is not allowed. This file contains sensitive credentials from your home directory. " +
+          "Ask the user to provide the specific information you need instead of reading this file directly.",
+      },
     ],
   },
   permissionGate: {
