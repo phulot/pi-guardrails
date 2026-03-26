@@ -213,7 +213,9 @@ async function explainCommand(
 /**
  * Check a parsed command against built-in structural matchers.
  */
-function checkBuiltinDangerous(words: string[]): DangerMatch | undefined {
+export function checkBuiltinDangerous(
+  words: string[],
+): DangerMatch | undefined {
   if (words.length === 0) return undefined;
   for (const matcher of BUILTIN_MATCHERS) {
     const desc = matcher(words);
