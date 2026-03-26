@@ -1,3 +1,4 @@
+import type { Assignment } from "@aliou/sh";
 import { parse } from "@aliou/sh";
 import {
   DynamicBorder,
@@ -80,6 +81,57 @@ const BUILTIN_MATCHERS: StructuralMatcher[] = [
     return words.includes("-R") ? "recursive ownership change" : undefined;
   },
 ];
+
+/**
+ * Env var names that disable git hooks when set before a git command.
+ * Matched against the `assignments` of a SimpleCommand (e.g. `HUSKY=0 git commit`).
+ */
+const HOOK_BYPASS_ENV_VARS = new Set([
+  "HUSKY",
+  "HUSKY_SKIP_HOOKS",
+  "SKIP",
+  "PRE_COMMIT_ALLOW_NO_CONFIG",
+  "GIT_HOOKS_DISABLED",
+]);
+
+/**
+ * Checks whether a SimpleCommand bypasses pre-commit hooks, either via:
+ *   - `git commit/push --no-verify` / `git commit/push -n`
+ *   - env var assignments that disable hooks (e.g. `HUSKY=0 git commit`)
+ *
+ * Returns a description string if a bypass is detected, undefined otherwise.
+ */
+export function checkPreCommitBypass(
+  words: string[],
+  assignments?: Assignment[],
+): string | undefined {
+  const isGitCommitOrPush =
+    words[0] === "git" && (words[1] === "commit" || words[1] === "push");
+
+  // --no-verify / -n on git commit or git push
+  if (isGitCommitOrPush) {
+    const hasBypassFlag = words.some(
+      (w) =>
+        w === "--no-verify" ||
+        // -n alone or combined short flags containing n (e.g. -nm, -an)
+        (w.startsWith("-") && !w.startsWith("--") && w.includes("n")),
+    );
+    if (hasBypassFlag) {
+      return `pre-commit hook bypass via --no-verify on git ${words[1]}`;
+    }
+  }
+
+  // Env var assignments that disable hooks (e.g. HUSKY=0 git commit)
+  if (assignments && assignments.length > 0 && isGitCommitOrPush) {
+    for (const assign of assignments) {
+      if (HOOK_BYPASS_ENV_VARS.has(assign.name)) {
+        return `pre-commit hook bypass via ${assign.name}= env var on git ${words[1]}`;
+      }
+    }
+  }
+
+  return undefined;
+}
 
 interface DangerMatch {
   description: string;
@@ -196,9 +248,14 @@ function findDangerousMatch(
       let match: DangerMatch | undefined;
       walkCommands(ast, (cmd) => {
         const words = (cmd.words ?? []).map(wordToString);
-        const result = checkBuiltinDangerous(words);
-        if (result) {
-          match = result;
+        const builtinResult = checkBuiltinDangerous(words);
+        if (builtinResult) {
+          match = builtinResult;
+          return true;
+        }
+        const bypassDesc = checkPreCommitBypass(words, cmd.assignments);
+        if (bypassDesc) {
+          match = { description: bypassDesc, pattern: "(structural)" };
           return true;
         }
         return false;
